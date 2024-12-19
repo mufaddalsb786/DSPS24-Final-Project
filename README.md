@@ -1,0 +1,1 @@
+The contents of this file include a graph, bar graph and multiple tables which showcase the rates of fatalities, with specific weapon types and in Republican and Democrat states. The politics of these states often reflect their stances on gun ownership, and red states make up the majority of the 10 most violent states of 2015, which was one of the most violent years in the US.  
