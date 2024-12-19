@@ -1,0 +1,109 @@
+---
+title: "Analysis of Gun Violence in the United States"
+author: "Generated Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(maps)
+```
+
+## Load Data
+
+```{r}
+
+shootings <- read.csv("shootings.csv")
+head(shootings)
+summary(shootings)
+```
+
+## Add Political Affiliation Column for 2015
+
+```{r add-political-affiliation-column}
+shootings$Political_Party_2015 <- NA
+
+political_affiliations <- data.frame(
+  State = c("texas", "georgia", "california", "north carolina", "arizona", 
+            "south carolina", "oregon", "florida", "tennessee", "ohio"),
+  Political_Party_2015 = c("Republican", "Republican", "Democrat", "Republican", 
+                           "Republican", "Republican", "Democrat", "Republican", 
+                           "Republican", "Republican")
+)
+
+shootings$Political_Party_2015 <- ifelse(tolower(shootings$State) %in% political_affiliations$State, 
+                                         political_affiliations$Political_Party_2015[match(tolower(shootings$State), political_affiliations$State)], 
+                                         NA)
+
+write.csv(shootings, "shootings_updated.csv", row.names = FALSE)
+head(shootings)
+```
+
+## Barplot of Deaths by Weapon Type in Each State
+
+```{r}
+weapon_data <- aggregate(NumberofVictimFatalities ~ State + TypeofGunGeneral, shootings, sum)
+
+ggplot(weapon_data, aes(x = State, y = NumberofVictimFatalities, fill = TypeofGunGeneral)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Deaths by Weapon Type in Each State",
+       x = "State",
+       y = "Total Deaths",
+       fill = "Weapon Type") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Map of Political Affiliation in 2015
+
+```{r}
+us_states <- map_data("state")
+us_states$region <- tolower(us_states$region)
+shootings$State <- tolower(shootings$State)
+map_data <- merge(us_states, shootings, by.x = "region", by.y = "State", all.x = TRUE)
+
+ggplot(map_data, aes(x = long, y = lat, group = group, fill = Political_Party_2015)) +
+  geom_polygon(color = "black") +
+  scale_fill_manual(values = c("Democrat" = "blue", "Republican" = "red", "NA" = "grey90")) +
+  labs(title = "Political Affiliation of the 10 Most Violent States in 2015",
+       fill = "Political Party") +
+  coord_fixed(1.3) +
+  theme_void()
+```
+
+## Barplot of Deaths by Weapon Type in the 10 Most Violent States
+
+```{r}
+violent_states <- c("texas", "georgia", "california", "north carolina", "arizona", 
+                    "south carolina", "oregon", "florida", "tennessee", "ohio")
+filtered_weapon_data <- subset(weapon_data, tolower(State) %in% violent_states)
+
+ggplot(filtered_weapon_data, aes(x = State, y = NumberofVictimFatalities, fill = TypeofGunGeneral)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Deaths by Weapon Type in the 10 Most Violent States",
+       x = "State",
+       y = "Total Deaths",
+       fill = "Weapon Type") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Summary of Weapon Usage in the 10 Most Violent States
+
+```{r}
+violent_states <- c("texas", "georgia", "california", "north carolina", "arizona", 
+                    "south carolina", "oregon", "florida", "tennessee", "ohio")
+filtered_shootings <- subset(shootings, tolower(State) %in% violent_states)
+
+weapon_summary <- aggregate(NumberofVictimFatalities ~ TypeofGunGeneral, filtered_shootings, sum)
+weapon_summary
+```
+
+## Summary of Political Affiliation and Fatalities
+
+```{r}
+party_counts <- table(shootings$Political_Party_2015, useNA = "ifany")
+party_fatalities <- aggregate(NumberofVictimFatalities ~ Political_Party_2015, shootings, sum, na.rm = TRUE)
+party_counts
+party_fatalities
+```
+
